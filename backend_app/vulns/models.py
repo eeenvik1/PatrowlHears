@@ -6,8 +6,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from organizations.models import Organization
 from alerts.models import AlertingRule
-from alerts.custom_alert import custom_alert
-from alerts.custom_alert_config import END_SYSTEM
+from custom_alert import alert
+from custom_alert.custom_alert_config import END_SYSTEM
 from alerts.tasks import slack_alert_vuln_task, email_instant_report_exploitable_task
 from alerts.tasks import email_instant_report_cvss_change_task
 from alerts.tasks import email_instant_report_cvss3_change_task
@@ -465,7 +465,8 @@ def alerts_vulnerability_save(sender, **kwargs):
     # New vulnerability
     if kwargs['instance']._state.adding:
         #Вот отсюда буду запускать таск о новой уязвимости
-        custom_alert(END_SYSTEM, "new_vuln", kwargs['instance'].id)
+        vuln = Vuln.objects.filter(id=kwargs['instance'].id)
+        alert(END_SYSTEM, "new_vuln", vuln)
         slack_alert_vuln_task.apply_async(
             args=[kwargs['instance'].id, "new"], queue='alerts', retry=False)
         # Check alerting rules
@@ -497,7 +498,8 @@ def alerts_vulnerability_save(sender, **kwargs):
 
             # Send Slack alert
             #Вот отсюда буду запускать таск об обновлении данных в уязвимости уязвимости
-            custom_alert(END_SYSTEM, "update_vuln", kwargs['instance'].id)
+            vuln = Vuln.objects.filter(id=kwargs['instance'].id)
+            alert(END_SYSTEM, "update_vuln", vuln)
             slack_alert_vuln_task.apply_async(
                 args=[kwargs['instance'].id, "update"], queue='alerts', retry=False)
             # Check alerting rules

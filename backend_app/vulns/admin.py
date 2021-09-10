@@ -3,6 +3,7 @@ from simple_history.admin import SimpleHistoryAdmin
 from .models import Vuln, ExploitMetadata, ThreatMetadata
 
 
+
 class ProductsInline(admin.TabularInline):
     model = Vuln.products.through
     raw_id_fields = ("product",)

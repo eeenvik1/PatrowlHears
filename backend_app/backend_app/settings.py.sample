@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'alerts',
     'search',
     'data',
+    'custom_alert',
 ]
 
 MIDDLEWARE = [
