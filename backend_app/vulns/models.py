@@ -465,6 +465,7 @@ def alerts_vulnerability_save(sender, **kwargs):
     # New vulnerability
     if kwargs['instance']._state.adding:
         #Вот отсюда буду запускать таск о новой уязвимости
+        custom_alert(END_SYSTEM, "new_vuln", kwargs['instance'].id)
         slack_alert_vuln_task.apply_async(
             args=[kwargs['instance'].id, "new"], queue='alerts', retry=False)
         # Check alerting rules
@@ -496,6 +497,7 @@ def alerts_vulnerability_save(sender, **kwargs):
 
             # Send Slack alert
             #Вот отсюда буду запускать таск об обновлении данных в уязвимости уязвимости
+            custom_alert(END_SYSTEM, "update_vuln", kwargs['instance'].id)
             slack_alert_vuln_task.apply_async(
                 args=[kwargs['instance'].id, "update"], queue='alerts', retry=False)
             # Check alerting rules
