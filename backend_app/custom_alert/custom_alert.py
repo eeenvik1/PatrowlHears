@@ -11,7 +11,7 @@ def vulnreable_product_by_vuln(vuln):
             product_name = product_name.split(":")
             product_name = product_name[4]
             product = Product.objects.filter(name=product_name).first()
-            if product and product.id_monitored(org):
+            if product and product.is_monitored(org):
                 return product_name
         return False
 
@@ -29,7 +29,7 @@ def custom_alert_to_telegram(event_type, vuln):
     vulnerable_product = vulnreable_product_by_vuln(vuln)
     if vulnerable_product:
         messgae = message.format(vulnerable_product)
-        message = "\nCVE-ID: {}\n Описание: {}\n".format(vuln.cve_id, vuln.summary)
+        message += "\nCVE-ID: {}\n Описание: {}\n".format(vuln.cve_id, vuln.summary)
         message += "CVSS Score: {}\n CVSS Вектор: {}\n ".format(str(vuln.cvss), str(vuln.cvss_vector))
         message += "CVSS3 Score: {}\n CVSS3 Вектор: {}\n ".format(str(vuln.cvss3), str(vuln.cvss3_vector))
         messgae += "Данные по уязвимым продуктам: {}\n".format(str(vuln.vulnerable_products))
@@ -44,7 +44,7 @@ def custom_alert_to_you_track(evnt_type, vuln):
 
 
 
-def alert(end_system, event_type, vuln):
+def send_alert(end_system, event_type, vuln):
     if end_system == "telegram":
         custom_alert_to_telegram(event_type, vuln)
     else:
