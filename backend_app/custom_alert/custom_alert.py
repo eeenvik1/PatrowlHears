@@ -1,3 +1,4 @@
+
 import requests
 
 from organizations.models import Organization
@@ -42,15 +43,16 @@ def custom_alert_to_telegram(event_type, vuln):
 
 def custom_alert_to_you_track(event_type, vuln):
     if event_type == "new_vuln":
-        issue_header = "Обнаружена новая уязвимость!"
+        issue_header = "Обнаружена новая уязвимость! {}".format(vuln.cveid)
     if event_type == "update_vuln":
-        issue_header = "Обнаружены изменения в уязвимости"
+        issue_header = "Обнаружены изменения в уязвимости {}".format(vuln.cveid)
 
     vulnerable_product = vuln_product_monitoring_check(vuln)
+
     if vulnerable_product:
-        message = "<h1>Идентификатор уязвимости</h1>CVE-ID:  {}".format(vuln.cve_id)
-        message += "<h1>Описание</h1>{}".format(vuln.summary)
-        message += "<h1>Дата выявления системой Patrowl<h1>{}".format(str(vuln.modified))
+#       message = "<h1>Идентификатор уязвимости</h1>CVE-ID:  {}".format(vuln.cve_id)
+        message = "<h1>Описание</h1>{}".format(vuln.summary)
+#       message += "<h1>Дата выявления системой Patrowl<h1>{}".format(str(vuln.modified))
         message += "<h1>Дата публикации</h1>{}".format(str(vuln.published))
         message += "<h1>Данные по уязвимым продуктам</h1>{}".format(str(vuln.vulnerable_products))
         message += "<h1>CVSS</h1>CVSS Score: {}, CVSS Вектор: {}".format(str(vuln.cvss), str(vuln.cvss_vector))
@@ -71,8 +73,9 @@ def custom_alert_to_you_track(event_type, vuln):
             "summary" : issue_header,
             "description" : message
         }
-        requests.post(URL, headers=headers, json=request_payload)
 
+        r = requests.post(URL, headers=headers, json=request_payload)
+        print(r.json())
 
 
 
