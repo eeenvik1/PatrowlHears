@@ -1,11 +1,11 @@
 
 import requests
+from celery import shared_task
 
-from organizations.models import Organization
-from cves.models import Product
 from .custom_alert_config import TELEGRAM_CHAT_ID, TELEGRAM_TOKEN_NEW_VULN, TELEGRAM_TOKEN_UPDATE_VULN
 from .custom_alert_config import YOU_TRACK_TOKEN, YOU_TRACK_PROJECT_ID, YOU_TRACK_BASE_URL
-
+from organizations.models import Organization
+from cves.models import Product
 
 def vuln_product_monitoring_check(vuln):
     for org in Organization.objects.filter(is_active=True):
@@ -42,7 +42,7 @@ def custom_alert_to_telegram(event_type, vuln):
 
 
 def custom_alert_to_you_track(event_type, vuln):
-    if event_type == "new_vuln":
+    if event_type == "new":
         issue_header = "Обнаружена новая уязвимость! {}".format(vuln.cveid)
     if event_type == "update_vuln":
         issue_header = "Обнаружены изменения в уязвимости {}".format(vuln.cveid)
@@ -50,9 +50,7 @@ def custom_alert_to_you_track(event_type, vuln):
     vulnerable_product = vuln_product_monitoring_check(vuln)
 
     if vulnerable_product:
-#       message = "<h1>Идентификатор уязвимости</h1>CVE-ID:  {}".format(vuln.cve_id)
         message = "<h1>Описание</h1>{}".format(vuln.summary)
-#       message += "<h1>Дата выявления системой Patrowl<h1>{}".format(str(vuln.modified))
         message += "<h1>Дата публикации</h1>{}".format(str(vuln.published))
         message += "<h1>Данные по уязвимым продуктам</h1>{}".format(str(vuln.vulnerable_products))
         message += "<h1>CVSS</h1>CVSS Score: {}, CVSS Вектор: {}".format(str(vuln.cvss), str(vuln.cvss_vector))
@@ -74,13 +72,47 @@ def custom_alert_to_you_track(event_type, vuln):
             "description" : message
         }
 
-        r = requests.post(URL, headers=headers, json=request_payload)
-        print(r.json())
+        requests.post(URL, headers=headers, json=request_payload)
+        #print(r.json())
 
 
 
+@shared_task(bind=True, acks_late=True)
+def custom_alert_to_youtrack_task(self, vuln_id, event_type):
+    from vulns.models import Vuln
+    vuln = Vuln.objects.filter(id=vuln_id).first()
+    if vuln is None:
+        return False
+    vulnerable_product = vuln_product_monitoring_check(vuln)
+    if vulnerable_product:
+        try:
+            issue_header = "Обнаружена новая уязвимость! {}".format(vuln.cveid)
+            message = "<h1>Описание</h1>{}".format(vuln.summary)
+            message += "<h1>Дата публикации</h1>{}".format(str(vuln.published))
+            message += "<h1>Данные по уязвимым продуктам</h1>{}".format(str(vuln.vulnerable_products))
+            message += "<h1>CVSS</h1>CVSS Score: {}, CVSS Вектор: {}".format(str(vuln.cvss), str(vuln.cvss_vector))
+            message += "<h1>CVSSv3</h1>CVSSv3 Score {}, CVSSv3 Вектор: {}".format(str(vuln.cvss3), str(vuln.cvss3_vector))
+            message += "<h1>Источники</h1>{}".format(str(vuln.reflinks))
 
+            URL = YOU_TRACK_BASE_URL + "/issues"
+            headers = {
+                "Accept": "application/json",
+                "Authorization": "Bearer {}".format(YOU_TRACK_TOKEN),
+                "Content-Type": "application/json"
+            }
 
+            request_payload = {
+                "project": {
+                    "id": YOU_TRACK_PROJECT_ID
+                },
+                "summary": issue_header,
+                "description": message
+            }
+
+            requests.post(URL, headers=headers, json=request_payload)
+        except Exception as e:
+            pass
+    return True
 
 def send_alert(end_system, event_type, vuln):
     if end_system == "telegram":

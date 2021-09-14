@@ -50,12 +50,12 @@ def toggle_monitor_vendor(self):
         if self.data['monitored'] is True and vendor not in org.org_monitoring_list.vendors.all():
             org.org_monitoring_list.vendors.add(vendor)
             for product in vendor.product_set.all():
-                if self.data['monitored'] is True and product not in org.org_monitoring_list.products.all():
+                if self.data['monitored'] is True and product not in org.org_monitoring_list.products.all()[::]:
                     org.org_monitoring_list.products.add(product)
         if self.data['monitored'] is False and vendor in org.org_monitoring_list.vendors.all():
             org.org_monitoring_list.vendors.remove(vendor)
             for product in vendor.product_set.all():
-                if self.data['monitored'] is False and product in org.org_monitoring_list.products.all():
+                if self.data['monitored'] is False and product in org.org_monitoring_list.products.all()[::]:
                     org.org_monitoring_list.products.remove(product)
 
     vendor.save()

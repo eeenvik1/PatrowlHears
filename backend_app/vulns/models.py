@@ -7,7 +7,9 @@ from django.dispatch import receiver
 from organizations.models import Organization
 from alerts.models import AlertingRule
 from custom_alert.custom_alert import send_alert
+from custom_alert.custom_alert import custom_alert_to_youtrack_task
 from custom_alert.custom_alert_config import END_SYSTEM
+from alerts.tasks import alert_to_yt_task, alert_to_yt_vuln_change
 from alerts.tasks import slack_alert_vuln_task, email_instant_report_exploitable_task
 from alerts.tasks import email_instant_report_cvss_change_task
 from alerts.tasks import email_instant_report_cvss3_change_task
@@ -465,8 +467,10 @@ def alerts_vulnerability_save(sender, **kwargs):
     # New vulnerability
     if kwargs['instance']._state.adding:
         #Вот отсюда буду запускать таск о новой уязвимости
-        vuln = Vuln.objects.filter(id=kwargs['instance'].id).first()
-        send_alert(END_SYSTEM, "new_vuln", vuln)
+        #vuln = Vuln.objects.filter(id=kwargs['instance'].id).first()
+        #send_alert(END_SYSTEM, "new_vuln", vuln)
+        alert_to_yt_task.apply_async(
+            args=[kwargs['instance'].id], queue='alerts', retry=False)
         slack_alert_vuln_task.apply_async(
             args=[kwargs['instance'].id, "new"], queue='alerts', retry=False)
         # Check alerting rules
@@ -498,8 +502,10 @@ def alerts_vulnerability_save(sender, **kwargs):
 
             # Send Slack alert
             #Вот отсюда буду запускать таск об обновлении данных в уязвимости уязвимости
-            vuln = Vuln.objects.filter(id=kwargs['instance'].id).first()
-            send_alert(END_SYSTEM, "update_vuln", vuln)
+            #vuln = Vuln.objects.filter(id=kwargs['instance'].id).first()
+            #send_alert(END_SYSTEM, "update_vuln", vuln)
+            alert_to_yt_vuln_change.apply_async(
+                args=[kwargs['instance'].id], queue='alerts', retry=False)
             slack_alert_vuln_task.apply_async(
                 args=[kwargs['instance'].id, "update"], queue='alerts', retry=False)
             # Check alerting rules

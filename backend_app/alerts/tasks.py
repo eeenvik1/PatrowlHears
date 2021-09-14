@@ -1,6 +1,7 @@
 from celery import shared_task
 from django.conf import settings
 from .utils import send_email_message
+from custom_alert.custom_alert import custom_alert_to_you_track
 from backend_app import slack
 from datetime import datetime
 import json
@@ -187,6 +188,17 @@ def email_instant_report_cvss_change_task(self, vuln_id):
     except Exception as e:
         logger.error("Error in 'email_instant_report_cvss_change_task'", e)
 
+@shared_task(bind=True, acks_late=True)
+def alert_to_yt_task(self, vuln_id):
+    from vulns.models import Vuln
+    vuln = Vuln.objects.filter(id=vuln_id).first()
+    custom_alert_to_you_track("new", vuln)
+
+@shared_task(bind=True, acks_late=True)
+def alert_to_yt_vuln_change(self, vuln_id):
+    from vulns.models import Vuln
+    vuln = Vuln.objects.filter(id=vuln_id).first()
+    custom_alert_to_you_track("update_vuln", vuln)
 
 @shared_task(bind=True, acks_late=True)
 def email_instant_report_cvss3_change_task(self, vuln_id):
