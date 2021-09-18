@@ -86,10 +86,12 @@ def custom_alert_to_you_track(event_type, vuln):
 
         message += issue_summary_cvss
         message += "<h1>Источники</h1>{}".format(str(vuln.reflinks))
+
         #Custom fields
         #Priority
         #CVSS Score
         #CVSS Vector
+
         URL = YOU_TRACK_BASE_URL + "/issues"
         headers = {
             "Accept":"application/json",
