@@ -41,6 +41,23 @@ def custom_alert_to_telegram(event_type, vuln):
         r = requests.get(URL)
 
 
+def get_priority_by_cvss(cvss_value):
+    if cvss_value <= 3.9:
+        priority = "Низкая"
+    elif cvss_value <= 6.9:
+        priority = "Средняя"
+    elif cvss_value <= 8.9:
+        priority = "Высокая"
+    else:
+        priority = "Критическая"
+    return priority
+'''
+TODO
+1. Расчет приоритета по CVSS+
+2. Заполнение полей CVSS Score и CVSS Vector+
+3. Распарсить продукты-
+4. Заполнить поле продукта?-
+'''
 def custom_alert_to_you_track(event_type, vuln):
     if event_type == "new":
         issue_header = "Обнаружена новая уязвимость! {}".format(vuln.cveid)
@@ -53,10 +70,26 @@ def custom_alert_to_you_track(event_type, vuln):
         message = "<h1>Описание</h1>{}".format(vuln.summary)
         message += "<h1>Дата публикации</h1>{}".format(str(vuln.published))
         message += "<h1>Данные по уязвимым продуктам</h1>{}".format(str(vuln.vulnerable_products))
-        message += "<h1>CVSS</h1>CVSS Score: {}, CVSS Вектор: {}".format(str(vuln.cvss), str(vuln.cvss_vector))
-        message += "<h1>CVSSv3</h1>CVSSv3 Score {}, CVSSv3 Вектор: {}".format(str(vuln.cvss3), str(vuln.cvss3_vector))
-        message += "<h1>Источники</h1>{}".format(str(vuln.reflinks))
+        #CVSS Check
+        if vuln.cvss3 is not None:
+            issue_priority = get_priority_by_cvss(vuln.cvss3)
+            issue_cvss_score = vuln.cvss3
+            issue_cvss_vector = str(vuln.cvss3_vector)
+            issue_summary_cvss = "<h1>CVSSv3</h1>CVSSv3 Score {}, CVSSv3 Вектор: {}"
+            issue_summary_cvss = issue_summary_cvss.format(str(vuln.cvss3), str(vuln.cvss3_vector))
+        else:
+            issue_priority = get_priority_by_cvss(vuln.cvss3)
+            issue_cvss_score = vuln.cvss
+            issue_cvss_vector = str(vuln.cvss_vector)
+            issue_summary_cvss = "<h1>CVSSv3</h1>CVSS Score {}, CVSS Вектор: {}"
+            issue_summary_cvss = issue_summary_cvss.format(str(vuln.cvss), str(vuln.cvss_vector))
 
+        message += issue_summary_cvss
+        message += "<h1>Источники</h1>{}".format(str(vuln.reflinks))
+        #Custom fields
+        #Priority
+        #CVSS Score
+        #CVSS Vector
         URL = YOU_TRACK_BASE_URL + "/issues"
         headers = {
             "Accept":"application/json",
@@ -69,11 +102,30 @@ def custom_alert_to_you_track(event_type, vuln):
                 "id" : YOU_TRACK_PROJECT_ID
             },
             "summary" : issue_header,
-            "description" : message
+            "description" : message,
+            "customFields": [
+                {
+                    "name": "Priority",
+                    "$type": "SingleEnumIssueCustomField",
+                    "value": {"name": issue_priority}
+                },
+                {
+                    "name": "CVSS Score",
+                    "$type": "SimpleIssueCustomField",
+                    "value": issue_cvss_score
+                },
+                {
+                    "name": "CVSS Vector",
+                    "$type": "SimpleIssueCustomField",
+                    "value": issue_cvss_vector
+                }
+
+
+            ]
         }
 
         requests.post(URL, headers=headers, json=request_payload)
-        #print(r.json())
+
 
 
 
