@@ -196,9 +196,10 @@ def alert_to_yt_task(self, vuln_id):
 
 @shared_task(bind=True, acks_late=True)
 def alert_to_yt_vuln_change(self, vuln_id):
-    from vulns.models import Vuln
-    vuln = Vuln.objects.filter(id=vuln_id).first()
-    custom_alert_to_you_track("update_vuln", vuln)
+    #from vulns.models import Vuln
+    #vuln = Vuln.objects.filter(id=vuln_id).first()
+    #custom_alert_to_you_track("update_vuln", vuln)
+    pass
 
 @shared_task(bind=True, acks_late=True)
 def email_instant_report_cvss3_change_task(self, vuln_id):

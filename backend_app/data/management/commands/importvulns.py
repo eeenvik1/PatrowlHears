@@ -30,7 +30,8 @@ class Command(BaseCommand):
             return
 
         if options['all'] is True or options['cwes'] is True:
-            print("[+] Importing CWEs")
+            print("[+] "
+                  "Importing CWEs")
             dj_cmd.call_command('importcwes', input_file=base_dir+"CWE/data/cwes.json")
 
         if options['all'] is True or options['cpes'] is True:

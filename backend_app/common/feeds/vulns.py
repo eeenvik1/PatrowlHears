@@ -7,6 +7,7 @@ from tqdm import tqdm
 from datetime import datetime
 from datetime import date as dtdate
 from dateutil import parser as dtparser
+from alerts.tasks import alert_to_yt_task
 import copy
 import json
 import traceback
@@ -139,6 +140,8 @@ def _create_vuln(data, packages, cveid=""):
         vuln.save()
         vuln.update_product_versions()
     vuln.save()
+    print(vuln.id)
+    #alert_to_yt_task(vuln.id)
     return vuln
 
 
@@ -461,7 +464,9 @@ def sync_vuln_fromcve(cve):
     # Save all
     vuln.save()
 
+    #Здесь это заканчиваается?
     # sync_exploits_fromvia(vuln.id)
+    alert_to_yt_task(vuln.id)
     return vuln
 
 
@@ -573,6 +578,7 @@ def import_cve(data, last_update=None):
 
             cur_cve = CVE(**new_cve)
             cur_cve.save()
+            #Да где блять создается эта новая ЦВЕ?
         except Exception as e:
             # print(e)
             logger.error(e)
@@ -615,7 +621,7 @@ def import_cve(data, last_update=None):
 
     cur_cve.save()
     # print(cur_cve.vulnerable_products)
-
+    # А ты то че делаешь?
     sync_vuln_fromcve(cur_cve)
     return
 
