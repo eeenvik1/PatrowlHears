@@ -56,7 +56,7 @@ TODO
 1. Расчет приоритета по CVSS+
 2. Заполнение полей CVSS Score и CVSS Vector+
 3. Распарсить продукты-
-4. Заполнить поле продукта?-
+4. Распарсить источники-
 '''
 def custom_alert_to_you_track(event_type, vuln):
     if event_type == "new":
@@ -69,7 +69,10 @@ def custom_alert_to_you_track(event_type, vuln):
     if vulnerable_product:
         message = "<h1>Описание</h1>{}".format(vuln.summary)
         message += "<h1>Дата публикации</h1>{}".format(str(vuln.published))
-        message += "<h1>Данные по уязвимым продуктам</h1>{}".format(str(vuln.vulnerable_products))
+        issue_products = "<h1>Данные по уязвимым продуктам</h1>"
+        for product in vuln.vulnerable_products:
+            issue_products += (product + "</br>")
+        message += issue_products
         #CVSS Check
         if vuln.cvss3 is not None:
             issue_priority = get_priority_by_cvss(vuln.cvss3)
@@ -85,7 +88,12 @@ def custom_alert_to_you_track(event_type, vuln):
             issue_summary_cvss = issue_summary_cvss.format(str(vuln.cvss), str(vuln.cvss_vector))
 
         message += issue_summary_cvss
-        message += "<h1>Источники</h1>{}".format(str(vuln.reflinks))
+        if vuln.reflinks:
+            issue_reflinks = "<h1>Источники</h1>"
+            for reflink  in vuln.reflinks:
+                issue_reflinks += "<a href=\"{}\">{}</a></br>".format(reflink, reflink)
+
+        message += issue_reflinks
 
         #Custom fields
         #Priority
